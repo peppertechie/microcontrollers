@@ -1,0 +1,120 @@
+/* Arduino sketch to power a simulated elevator call panel
+ * 2 physical momentary buttons
+ * 2 lights in the buttons indicating a button press
+ * 2 arrows, 1 per direction indivating the direction the elevator is traveling in when it arrives
+ * 1 buzzer
+ * Total 7 digital I/O
+ * 
+ * Adafruit Circuit Playground
+ * IO 0 NeoPixels (total of 4)
+ * IO 1 Analog out for audio
+ * IO 2 Up button
+ * IO 3 Down button
+ * 
+ */
+
+#include <Adafruit_CircuitPlayground.h>
+long randfloor;
+long floortime;
+long randdirection;
+int up_call_state=0; //0 is no call and 1 is called 
+int down_call_state=0; //0 is no call and 1 is called 
+
+
+/*
+ * SUBROUTINES GO HERE
+ */
+
+//subroutine to read the button states, turn on the light on the button, and set the button variable
+void read_button_state(){ 
+  if (CircuitPlayground.leftButton()){
+  up_call_state=1;
+  CircuitPlayground.setPixelColor(3, 0, 0, 255); //turn on up button
+  Serial.println("Going Up");
+  }
+  if (CircuitPlayground.rightButton()) {
+  down_call_state=1;
+  Serial.println("Going Down");
+  CircuitPlayground.setPixelColor(6, 0, 0, 255); //turn on down button
+  }
+}
+
+//subroutine to delay while constantly checking if the buttons are being pressed
+void delay_loop(int timedelay){
+       Serial.print("Time delay "); 
+       Serial.println(timedelay);
+       while (timedelay>0){
+        read_button_state(); //check if a button is being pressed
+        delay(10); //pause 
+        timedelay=timedelay-10; //incrememnt floortime down
+     }
+}
+
+//subroutine to clear UP call state because elevator arrived
+void arrive_going_up(){
+      CircuitPlayground.setPixelColor(1, 0, 255, 0);//turn on the up arrow
+      CircuitPlayground.playTone(500, 200); //chime
+      Serial.println("Elevator Arrived going up");
+      delay_loop(500);//delay loop
+      CircuitPlayground.setPixelColor(3, 0, 0, 0);//turn off up lights
+      CircuitPlayground.setPixelColor(1, 0, 0, 0);
+      Serial.println("Elevator Left");
+      up_call_state=0;
+}
+
+//subroutine to clear DOWN call state because elevator arrived
+void arrive_going_down(){
+      CircuitPlayground.setPixelColor(8, 0, 255, 0);//turn on the down arrow
+      CircuitPlayground.playTone(500, 200); //chime
+      Serial.println("Elevator Arrived going down");
+      delay_loop(500);//delay loop
+      CircuitPlayground.setPixelColor(8, 0, 0, 0);//turn off down lights
+      CircuitPlayground.setPixelColor(6, 0, 0, 0);
+      Serial.println("Elevator Left");
+      down_call_state=0;
+}
+
+/*
+ * END SUBROUTINES
+ */
+
+
+void setup() {
+  Serial.begin(9600);
+  CircuitPlayground.begin();
+  CircuitPlayground.clearPixels(); //make sure all pixels are off
+}
+
+
+void loop(){
+read_button_state(); //If no buttons are pressed we just keep reading the state
+
+if (up_call_state+down_call_state>0){  //If either or both button is pressed we call the elevator
+     randfloor = random(1, 6); //sets how many floors away the elevator is
+     floortime = randfloor * 1000; //sets how long the elevator will take to arrive
+     Serial.print("Floors away "); 
+     Serial.println(randfloor);
+     delay_loop(floortime); //delay while we wait for the elevator
+     
+//elevator arrives and we decide which direction it is going and act accordingly
+     if (up_call_state+down_call_state==2){ //are both up and down pressed? If yes we turn off one
+        Serial.println("if both");
+        randdirection = random(1, 2); //sets which direction the elevator arrived going in
+        if (randdirection==1){//arrived going up
+          arrive_going_up();
+        }
+        else{
+          arrive_going_down(); //arrived going down
+        }
+     }
+     
+     else if(up_call_state==1){ //only the up button is pressed
+        arrive_going_up();
+     } 
+     
+    else { //must be only the down button
+      arrive_going_down();
+    }
+  
+}
+}
