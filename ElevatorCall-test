@@ -2,22 +2,60 @@
 #https://learn.adafruit.com/circuitpython-essentials/circuitpython-digital-in-out
 #Circuit Python
 #Hardware: Adafruit Trinket M0
+#mac connect - screen /dev/tty.usb*
 #Connections: D0=Neopixels, D1=Up button, D2=Down button
 
 import time
 import board
+import neopixel
+import random
 from digitalio import DigitalInOut, Direction, Pull
 
+#Variables
+randfloor = 0
+floortime = 0
+randdirection = 0;
+up_call_state = 0 #0 is no call and 1 is called
+down_call_state = 0 #0 is no call and 1 is called
+
+#initialize switch pins
 upswitch = DigitalInOut(board.D1)
 downswitch = DigitalInOut(board.D2)
-
 downswitch.direction = Direction.INPUT
 downswitch.pull = Pull.UP
 upswitch.direction = Direction.INPUT
 upswitch.pull = Pull.UP
 
+#initialize neopixel
+pixel_pin = board.D0
+num_pixels = 2
+pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5)
+
+#subroutines
+
+#subroutine to read the button states, turn on the light on the button, and set the button variable
+def read_button_state():
+  if not upswitch.value:
+      up_call_state = 1
+      pixels[0] = (255,0,0) #turn on up button
+      print("Going Up")
+  if not downswitch.value:
+      down_call_state = 1
+      print("Going Down");
+      pixels[1] =  (255,0,0) #turn on down button
+
+#subroutine to delay while constantly checking if the buttons are being pressed
+def delay_loop( timedelay ):
+    print("Time delay ", timedelay)
+    while timedelay>0:
+        read_button_state() #check if a button is being pressed
+        time.sleep(0.010) #pause
+        timedelay=timedelay-10 #incrememnt floortime down
+
+#end subroutines
+
+#main loop
 while True:
-    upvalue = upswitch.value;
-    downvalue = downswitch.value;
-    print(upvalue, downvalue)
-    time.sleep(0.01)  # debounce delay
+    pixels[0] = (0,0,0)
+    read_button_state()
+time.sleep(1) #  delay
